@@ -1,0 +1,1090 @@
+---
+title: "HMB342 R Learning Module 2"
+author: ""
+output:
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: false
+    self_contained: true
+runtime: shiny_prerendered
+---
+
+
+```{r setup packages, include=FALSE}
+library(knitr)
+library(learnr)
+library(tidyverse)
+library(epitools)
+library(maps)
+library(sf)
+library(scales)  ## for percent formatting
+library(png) ## for image
+library(grid) ## for image
+library(here)
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r, include=FALSE}
+cannabis_data <- read.csv("cannabis_data.csv") 
+pfas_data <- read.csv("pfas_data.csv")
+birth_data <- read.csv("birth_data.csv")
+birth_data <- birth_data %>%
+  rename(State = State.Abbreviation)
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>% #filtering to only get total PFAS
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.)) 
+pfas_births <- birth_data %>%
+  left_join(pfas_data_mean, by = "State") 
+```
+
+# HMB342 R Learning Module 2
+
+## Visualizing Data with ggplot2
+
+In the following sections, we will produce plots using the **`ggplot2`** package, a *grammar of graphics* package which is also part of the **`tidyverse`** package. 
+
+The basic syntax of `ggplot2 in R` involves building plots step by step by adding layers with +. The general syntax is 
+
+```{r, eval=FALSE, echo =TRUE}
+
+ggplot(data , mapping = aes(...)) +
+  <GEOM_FUNCTION>(aes(...), ...) +
+  <OTHER_LAYERS> 
+
+```
+
+Any plot produced using `ggplot()` requires the following main components:
+
+1. `ggplot(data, aes(...))` 
+  - `data` is *data frame* that contains the data (in tidy data format) to plot,
+  - `aes():` *aesthetics* mappings (which variables are mapped to the x-axis, y-axis, color, size, shape, etc.).
+2. `+ geom_*()` sepcifies the *geometry* that defines how the plot will be drawn (e.g., histogram, scatterplot, etc.).
+3. Optional layer: `scale_x_continuous`, `scale_y_continuous` to customize axes (ticks, names, scale)
+4. Optional layer: `labs(x = ..., y = ..., subtitle = ..., title = ...)` to customize the labels for the axes and plot titles
+5. Optional layer: `ggplot` themes: e.g., `theme_classic()`, `theme_bw()`, `theme_minimal()`, `theme_dark()`, `theme_light()`. Complete list [here](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+
+Examples of geom layers are:
+
+`geom_histogram()`: represents numeric (continuous) data as a histogram
+
+`geom_line()`:  represents data as lines joining data points (e.g., line graphs)
+
+`geom_bar()` : represents discrete data as a bar chart
+
+`geom_point()`: represents data as points (e.g., scatter plots)
+
+There are many ways to customize your plots by building on the basic code. As you gain more experience with R, you will discover that there are multiple ways to do things in R, including data visualizations. But, we are focussing on **`ggplot2`** here since it is a powerful package you can use to produce impressive (and effective!) visualizations. 
+
+## ggplot2: Numerical Variable
+
+Let's begin with the `pfas_data` data:
+
+```{r}
+pfas_data <- read.csv("pfas_data.csv")
+
+head(pfas_data)
+
+```
+
+Suppose we are interested in the distribution of total PFAS levels for the 2023 EWG/EPA PFAS data. 
+
+**QUESTION**
+```{r exercise7setup, echo=FALSE}
+
+question("Which of the following plots would be appropriate to visualize the distribution of total PFAS measurements? Select all that apply.",
+         answer("Histogram", correct = TRUE, message = "PFAS (ppt) levels are quantitative measurements so the plots you selected are appropriate summaries of this distribution!"),
+         answer("Barplot", message = "A barplot would not be appropriate here. We use Barplots to summarize the distribution of categorical variables. Is PFAS (ppt) categorical? Please try again."),
+        answer("Dotplot", correct = TRUE), 
+        answer("Boxplot", correct = TRUE),
+        answer("Scatterplot", message = "A scatterplot would not be appropriate. Scatterplots are appropriate when you have two quantative variables and are interested in their association. Here we have one variable - PFAS levels (ppt). Please try again."), 
+         allow_retry = TRUE
+)
+```
+
+### *Histograms* 
+
+Histograms are used to show the frequency distribution of *numerical* data within a dataset. They are useful for understanding the spread, skewness, and the presence of any outliers in the data. We use `geom_histogram` to create histograms. 
+
+Try running the following code to create a histogram of PFAS levels on the cleaned dataset `total_pfas_data`, in which PFAS levels are stored in `Value..PPT.` variable:
+
+```{r exercise8setup, echo = FALSE}
+setwd(here())
+
+pfas_data <- read.csv("pfas_data.csv")
+
+total_pfas_data <- pfas_data %>%
+  filter(Analyte == "Total PFAS") 
+```
+
+```{r exercise8, exercise= TRUE, exercise.lines = 5, exercise.setup="exercise8setup"}
+# Histogram of total_pfas_data$`Value..PPT.`
+total_pfas_data %>% 
+  ggplot(aes(x = Value..PPT.)) +
+  geom_histogram(binwidth = 10) + # Bin width set as 10
+  xlim(0, 100) # x axis is displayed from 0 to 100
+```
+
+You can also change the features of the histogram within `geom_histogram`:
+
+  - bin width using the `binwidth` argument 
+  - bar fill colours using the `fill` argument 
+  - outline colour of the bars using the `colour` argument
+
+Give it a try!
+
+```{r exercise8-hint-1}
+#  Changing binwidth/fill/colour
+total_pfas_data %>% 
+  ggplot(aes(x = Value..PPT.)) +
+  geom_histogram(binwidth = 8, fill = "blue", colour = "red") + 
+  xlim(0, 100)
+```
+
+### *Boxplots* 
+
+
+*Boxplots* show the distribution of numerial data through statistical means rather than as frequency values. The box contains the middle 50% of the data, the line in the middle of the box represents the median, while the whiskers extend to the minimum and maximum values. We use `geom_boxplot` to create boxplots. 
+
+Try running the following code to create a boxplot of mean PFAS levels across different states on the cleaned dataset `pfas_data_mean`, in which state-specific mean PFAS levels are stored in `mean_ppt` variable:
+
+```{r exercise9setup, echo = FALSE}
+setwd(here())
+pfas_data <- read.csv("pfas_data.csv")
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+```
+
+
+```{r exercise9, exercise= TRUE, exercise.lines = 5, exercise.setup="exercise9setup"}
+# Boxplot of pfas_data_mean$mean_ppt
+pfas_data_mean %>% 
+  ggplot(aes(y = mean_ppt)) +
+  geom_boxplot()
+
+```
+
+Note that to create this boxplot, PFAS levels were specified as y rather than x in `aes()` to maintain consistency with the boxplot format in the course. Try changing y to x in `aes()` and rerunning the code above to see what happens. Sometimes you encounter boxplots that look like this as well.
+
+### *Dotplots* 
+
+*Dotplots* also show the distribution of the data, with each observation represented as a dot. Hence, dotplots are best used when the dataset is small. We use `geom_dotplot` to create boxplots and dotplots. 
+
+Try running the following code to create a dotplot of mean PFAS levels across different states on the cleaned dataset `pfas_data_mean`, in which state-specific mean PFAS levels are stored in `mean_ppt` variable:
+
+```{r exercise10, exercise= TRUE, exercise.lines = 5, exercise.setup="exercise9setup"}
+# Dotplot of pfas_data_mean$mean_ppt
+pfas_data_mean %>% 
+  ggplot(aes(x = mean_ppt)) +
+  geom_dotplot(dotsize = 0.8) # Try changing dotsize
+
+```
+
+
+## ggplot2: Categorical Data
+
+Let's begin with the cannabis_data data:
+
+```{r}
+cannabis_data <- read.csv("cannabis_data.csv")
+
+head(cannabis_data)
+
+```
+
+Suppose we are interested in the location distribution of the cannabis_data survey respondents: 
+
+**QUESTION**
+```{r exercise11setup, echo=FALSE}
+
+question("Which of the following plots would be appropriate to visualize how the survey respondents are distributed across provinces?", 
+        answer("Boxplot", message = "A boxplot would not be appropriate. Boxplots are appropriate summaries of distributions of quantitative variables. province is a categorical variable. Please try again."),
+        answer("Scatterplot", message = "A scatterplot would not be appropriate. Scatterplots are appropriate when you have two quantative variables and are interested in their association. Here we have one categorical variable - province. Please try again."), 
+        answer("Histogram", message = "A histogram would not be appropriate. Histograms are appropriate summaries of distributions of quantitative variables. Province is a categorical variable. Please try again."),
+         answer("Barplot", correct = TRUE, message = "Yes! prov is a categorical variable so a barplot is an appropriate summary of this distribution."), 
+         allow_retry = TRUE
+)
+```
+
+### *Barplots* 
+
+Barplots are a type of data visualization useful for comparing between groups and showing the relationship between a numerical and a categorical variable. They are highly useful for visualizing survey data! 
+
+Notice that the data type for the `prov` column is integer in the dataframe.
+
+```{r}
+class(cannabis_data$prov)
+```
+
+However, they are the coded representation of each province, instead of meaningful numerical values. Thus, we can use a function we learned in module 1 (i.e.,mutate) to convert the survey responses back into categories to generate a bar plot.
+
+We use `geom_bar` to create bar plots. Run the following code to create a bar plot of the distribution of the provinces individuals in this `cannabis_data` survey fall into. `factor()` is used to convert the survey integer responses into more meaningful descriptions:
+
+```{r exercise12setup, echo = FALSE}
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>% 
+  select(prov, education3, income_recode, community_size, use_freq_rec) %>%
+  filter(if_all(everything(), ~ . != -7)) %>%
+  filter(if_all(everything(), ~ . != -8))
+```
+
+```{r exercise12, exercise= TRUE, exercise.lines = 10, exercise.setup="exercise12setup"}
+# Barplot of number of individuals in each province
+cannabis_data %>% 
+  mutate(province = factor(prov, # the variable we are trying to transform
+                       levels = 1:11,     # original representation 
+                       labels = c("AB", "BC", "MB",      # the corresponding transformation, e.g. 1 -> AB
+                                 "NB", "NL", "NS", "ON", 
+                                 "PE", "QC", "SK", "Territories"))) %>% 
+  ggplot(aes(x = province)) +
+  geom_bar()
+
+```
+
+To change the y axis to percent instead of the default of count, you can add the code  `+ scale_y_continuous(name="Percent",labels = scales::percent)` after `geom_bar()`. Give it a try!
+
+```{r exercise12-hint-1}
+# Barplot of Percentage of individuals in each province
+cannabis_data %>% 
+  mutate(province = factor(prov, # the variable we are trying to transform
+                       levels = 1:11,     # original representation 
+                       labels = c("AB", "BC", "MB",      # the corresponding transformation, e.g. 1 -> AB
+                                 "NB", "NL", "NS", "ON", 
+                                 "PE", "QC", "SK", "Territories"))) %>% 
+  ggplot(aes(x = province)) +
+  geom_bar() + 
+  scale_y_continuous(name="Percent",labels = scales::percent)
+
+```
+
+You can also change the features of the bar graph within `geom_bar` similarly as histogram. Give it a try!  
+```{r exercise12-hint-2}
+# Example of changing colours
+cannabis_data %>% 
+  mutate(province = factor(prov, # the variable we are trying to transform
+                       levels = 1:11,     # original representation 
+                       labels = c("AB", "BC", "MB",      # the corresponding transformation, e.g. 1 -> AB
+                                 "NB", "NL", "NS", "ON", 
+                                 "PE", "QC", "SK", "Territories"))) %>% 
+  ggplot(aes(x = province)) +
+  geom_bar(fill = "#56C8FC" , colour = 'blue') 
+
+```
+
+## ggplot2: Multiple Variables
+
+### Using *facet_wrap* to show visualizations by group 
+
+Suppose we were interested in comparing cannabis usage frequency for those across different income levels. We can produce visualizions comparing the distributions of recreational cannabis usage frequencies for these groups using  **`facet_wrap`**. Similar to the previous section, we first have to transform `recreational_use_frequency` and `income_recode` variables from numerical representation back to their corresponding string representation.
+
+```{r exercise13, exercise= TRUE, exercise.lines = 22, exercise.setup="exercise12setup"}
+# Create separate bar plots by income level
+cannabis_data %>%
+  
+  # Transform use_freq_rec variable back to string representation
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  
+  # Transform income_recode variable back to string representation
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) %>%
+  
+  # Create bar plot to count recreational_use_frequency
+  ggplot(aes(x = recreational_use_frequency)) +
+  geom_bar() + 
+  
+  # Grouped by annual_income
+  facet_wrap(~annual_income)
+
+```
+
+### Using *boxplots* to represent multivariable data
+
+Boxplots can also be used to represent comparisons among multiple groups. Let's say we are interested in looking at the different concentrations of PFAS analytes vary in the state of New Jersey: 
+
+```{r exercise14, exercise= TRUE, exercise.lines = 7, exercise.setup="exercise8setup"}
+# Boxplots of PFAS concentration for different analytes in NJ
+pfas_data %>%
+  filter(State == "NJ") %>%
+  group_by(Analyte) %>%
+  ggplot(aes(x = Analyte, y = Value..PPT.)) + 
+  geom_boxplot()
+  
+```
+
+
+### *Scatterplots* 
+
+Scatter plots are data visualizations used to look at the relationship between two quantitative variables. For example, we can use it to explore the association between environmental PFAS concentrations and birth weight. We use `geom_point` to create scatterplots. We will use the joined `pfas_births` dataset:
+
+```{r exercise15setup, echo = FALSE}
+setwd(here())
+pfas_data <- read.csv("pfas_data.csv")
+birth_data <- read.csv("birth_data.csv")
+birth_data <- birth_data %>% rename(State = State.Abbreviation)
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+pfas_births <- left_join(pfas_data_mean, birth_data, by = "State")
+```
+
+
+```{r exercise15, exercise= TRUE, exercise.lines = 18, exercise.setup="exercise15setup"}
+# Scatter plot of mean PFAS vs average birth weight
+pfas_births %>%
+  
+  # Remove observations with missing calues in these variables
+  drop_na(mean_ppt, Average.Birth.Weight..grams.) %>%
+  
+  # Create scatter plot 
+  ggplot(aes(x = mean_ppt, y = Average.Birth.Weight..grams.)) +
+  geom_point() +
+  
+  # Set the plot theme to has minimal features
+  theme_minimal() +
+  
+  # Give meaningful axis labels
+  labs(
+    x = "Mean PFAS (ppt)",
+    y = "Average Birth Weight (grams)")
+  
+```
+
+From this, we can see a moderate negative association in our data, suggesting that higher PFAS exposure may be associated with lower birth weights. Statistical tests can be used to determine whether the relationship between the variables of interest is greater than what we would expect to see by chance. However, performing statistical analysis is beyond the scope of this tutorial. If you would like to draw more attention to the association, you can create a line of best fit based on the data using `geom_smooth(method = "lm") `: 
+
+
+```{r}
+pfas_births %>% 
+  ggplot(aes(x = mean_ppt, y = Average.Birth.Weight..grams.)) + 
+  geom_point() + 
+  # Include best fit line
+  geom_smooth(method = "lm", se = TRUE) + #se shows the standard error of the model
+  labs(x = "Mean PFAS Exposure by State (ppt)", y = "Average Birth Weight (g)") +
+  theme_minimal()
+
+```
+
+
+
+**CODING EXERCISES**
+
+Now it's time to apply the concepts we've gone over!
+
+Using `cannabis_data`, write a code to produce a visualization that displays the distribution of cannabis recreational use frequency across different education levels.
+
+```{r exercise16setup, echo = FALSE}
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>% 
+  select(prov, education3, income_recode, community_size, use_freq_rec) %>%
+  filter(if_all(everything(), ~ . != -7)) %>%
+  filter(if_all(everything(), ~ . != -8))
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(education = factor(education3, 
+                         levels = 1:3,
+                         labels = c("High School or Less", "Trades or non-university diploma", "Bachelor's Degree or Higher")))
+```
+
+
+```{r exercise16, exercise= TRUE, exercise.lines = 6, exercise.setup="exercise16setup"}
+cannabis_data
+
+```
+
+
+```{r exercise16-hint-1}
+# What type of data are recreational use frequency and education level?
+```
+
+
+```{r exercise16-hint-2}
+# facet_wrap() can be used to group data
+```
+
+
+```{r exercise16-solution}
+# cannabis_data %>%
+#   ggplot(aes(x = recreational_use_frequency)) +
+#   geom_bar() + 
+#   facet_wrap(~education)
+```
+
+
+Using the `pfas_births` data, create a data visulization of the relationship between PFAS exposure `mean_ppt` and fertility rate `Fertility.Rate`. Make sure to include meaningful axis labels!
+
+```{r exercise17, exercise= TRUE, exercise.lines = 8, exercise.setup="exercise15setup"}
+pfas_births%>%
+  drop_na(mean_ppt, Fertility.Rate)
+
+
+```
+
+
+```{r exercise17-solution}
+pfas_births %>%
+  drop_na(mean_ppt, Fertility.Rate) %>%
+  ggplot(aes(x = mean_ppt, y = Fertility.Rate)) +
+  geom_point() +
+  theme_minimal() +
+  labs(
+    x = "Mean PFAS (ppt)",
+    y = "Fertility Rate (per 1000 female population)")
+```
+
+
+
+## Base R Functions: Numerical Variable
+
+In the previous sections, we focused on using `tidyverse` and `ggplot` functions to wrangle, summarize and visualize data. There are also some non-tidyverse functions that may come in handy. R comes built in with functions for plotting. Although they are not as popular as `ggplot`, they are still extremely useful, and in many cases, more customizeable. 
+
+When we were using `tidyverse` syntax, we took a logical, step-by-step approach to our coding through piping (`%>%`). In base R functions, we do not use piping. Instead, we specify the data frame to which the variables we are referring to. We do so by using the syntax `df$var` where `df` is the data frame name, and `var` is the variable name. If you do not include the data frame name first, your code won't run. Let's use base R functions to compute some summary statistics for `pfas_data`:
+
+```{r exercise18, exercise= TRUE, exercise.lines = 24, exercise.setup="exercise9setup"}
+# summary() gives 5-number summary + mean
+summary(pfas_data$Value..PPT.) 
+
+# Minimum
+min(pfas_data$Value..PPT.)
+
+# First quartile (25th percentile)
+quantile(pfas_data$Value..PPT.,0.25) 
+
+# Median
+median(pfas_data$Value..PPT.)
+
+# Mean
+mean(pfas_data$Value..PPT.) 
+
+# Third Quartile (75th percentile)
+quantile(pfas_data$Value..PPT.,0.75) 
+
+# Maximum
+max(pfas_data$Value..PPT.) 
+
+# Standard Deviation
+sd(pfas_data$Value..PPT.) 
+
+```
+
+We can also create a stem plot for quantative variables using base R code. 
+
+```{r exercise19, exercise= TRUE, exercise.lines = 3, exercise.setup="exercise9setup"}
+# Stem Plot
+stem(pfas_data$Value..PPT.)
+```
+
+
+We can also calculate the correlation with `cor()` between two numerical variables as follows:
+
+```{r exercise20, exercise= TRUE, exercise.lines = 9, exercise.setup="exercise15setup"}
+# Remove NA observations
+pfas_births <- na.omit(pfas_births) 
+
+# Correlation between PFAS exposure and fertility rate
+cor(pfas_births$mean_ppt, pfas_births$Fertility.Rate)
+
+# Alternative way to remove NAs within cor() calculation
+cor(pfas_births$mean_ppt, pfas_births$Fertility.Rate, use="complete.obs")
+
+```
+
+
+
+## Base R Functions: Categorical Variable I
+
+Recall the recreational use frequency classifications we added to the data frame `cannabis_data` in the previous section. We create an additional frequency classification on annual income as follow  
+```{r}
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) 
+head(cannabis_data)
+```
+
+```{r exercise21setup, echo = FALSE}
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) 
+```
+
+Let's create some summaries of the distribution of frequency classifications for these individuals!
+
+### *Frequency table*
+
+A frequency table lists a set of values and how often each set of values appears. We use `table()` function to create such table. This frequency table looks at how many observations there are for each classification of recreational cannabis use frequency: 
+
+```{r exercise21, exercise= TRUE, exercise.lines = 3, exercise.setup="exercise21setup"}
+# Frequency table
+table(cannabis_data$recreational_use_frequency)
+```
+
+
+### *Proportion table*
+
+A proportion table, also known as a relative frequency table, is essentially a frequency table that shows the proportion of a categories frequency relative to the total number of observations. We wrap the frequency table with `prop.table()` to create a proportion table. For example: 
+
+```{r exercise22, exercise= TRUE, exercise.lines = 3, exercise.setup="exercise21setup"}
+# Proportion table
+prop.table(table(cannabis_data$recreational_use_frequency))
+```
+
+### *Bar plots* (using base R)
+
+We can also create bar plots with base R function `barplot()` wrapping the frequency or proportion table.
+
+```{r exercise23, exercise= TRUE, exercise.lines = 6, exercise.setup="exercise21setup"}
+# Barplot of frequency (count) in each category
+barplot(table(cannabis_data$recreational_use_frequency)) 
+
+# Barplot of proportion in each category
+barplot(prop.table(table(cannabis_data$recreational_use_frequency))) 
+```
+
+### *Pie chart* 
+
+Pie charts are categorical data visualizations where each "slice" represents a proportion of the whole. Note that ggplot has no pie chart option, so this is where base R comes into handy! They are created using the `pie()` function wrapping the frequency table.
+
+```{r exercise24, exercise= TRUE, exercise.lines = 3, exercise.setup="exercise21setup"}
+# Pie chart
+pie(table(cannabis_data$recreational_use_frequency))
+```
+
+However, pie charts have a lot of shortcomings and are often not the most effective visualizations, such as:
+
+- too many categories/"slices";
+- multiple similar values between categories;
+- ineffective visual display of exact proportions.
+
+In general, it is simply more effective to use bar charts given their versatility and increased informational capacity. Pie charts are only really an effective display when a part-to-whole comparison is meaningful, there are few categories, and the slices carve out identifiable proportions in the chart (such as multiples of 1/4, or 1/3).
+
+
+### How to customize base R plots
+
+To customize these plots, use the `help()` function to obtain the R help documentation for the function you are using. An internet search for code which you can adapt to suit your needs and preferences is a good place to start too (just make sure you understand what the code is doing!)
+
+
+## Base R Functions: Categorical Variable II
+
+While we can create a two-way table using `dplyr` code, base R code is simply shorter. Consider the variables `annual_income` and `recreational_use_frequency` in `cannabis_data` dataset. We can produce two-way tables of counts and proportions and obtain joint distributions and conditional distributions.
+
+### *Two-way table of counts*
+
+When we insert two variables into `table()`, the first variable will be displayed in rows and the second variable will be displayed in columns.
+
+```{r exercise25, exercise= TRUE, exercise.lines = 2, exercise.setup="exercise21setup"}
+table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency)
+```
+
+
+### *Two-way table of proportions* or *Joint Distribution*
+
+Similarly with `prop.table()`, the first variable will be displayed in rows and the second variable will be displayed in columns.
+
+```{r exercise26, exercise= TRUE, exercise.lines = 2, exercise.setup="exercise21setup"}
+prop.table(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency))
+
+```
+
+
+### *Two-way table of proportions* or *Conditional distribution given row variable*
+
+To obtain conditional distribution given the row variable, simply set `margin = 1`.
+
+```{r exercise27, exercise= TRUE, exercise.lines = 2, exercise.setup="exercise21setup"}
+prop.table(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency),margin=1)
+```
+
+### *Two-way table of proportions* or *Conditional distribution given column variable*
+
+To obtain conditional distribution given the column variable, simply set `margin = 2`. Try coding it out yourself!
+
+```{r exercise28, exercise= TRUE, exercise.lines = 2, exercise.setup="exercise21setup"}
+
+
+```
+
+```{r exercise28-hint-1}
+prop.table(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency),margin=2)
+```
+
+### *Barplots* and *Mosaic plots*
+
+If we are interested in comparing annual income classifications versus cannabis usage frequency, we can use the second conditional distribution table above. Alternatively, we can also visualize this in a stacked barplot by wrapping the proportion table with `barplot()`. In this case, each bar corresponds to a category in the marginalized variable (shown on the x-axis), and the bars are further categorized by the other variable.
+
+```{r exercise29, exercise= TRUE, exercise.lines = 2, exercise.setup="exercise21setup"}
+# Bar plot 
+barplot(prop.table(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency),margin=2),legend.text=TRUE)
+
+```
+
+We can also create a mosaic plot for these variables using base R functions. Note that this function expects tables entered in the **opposite order** to the tables and bar plots above. The variable you would like the columns to represent in the mosaic plot should be entered as the rows (i.e., first variable in the table), and the variable you would like the rows to represent entered as the column (i.e., second variable in the table).
+
+```{r exercise30, exercise= TRUE, exercise.lines = 9, exercise.setup="exercise21setup"}
+# Mosaic plot
+mosaicplot(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency))
+
+# Add a title using 'main' argument
+mosaicplot(
+  table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency),
+  main="Income Level Versus Recreational Cannabis Usage Frequency")
+
+```
+
+
+
+## epitools: Relative Risks and Odds Ratios
+
+We can also compute *relative risks* (RR) and *odds ratios* (OR) to compare risk and odds of individuals falling within certain groups (income, education, etc.) also using cannabis at certain frequencies. Unfortunately, there are no functions in base R (or `tidyverse`) to compute RR and OR. So, we need to install and load another R package - `epitools`. 
+
+```{r}
+#install.packages("epitools")
+library(epitools)
+```
+
+To calculate the OR and RR, we first need to collapse our income and frequency groups into two binary outcomes respectively, and determine what constitutes to lower/ higher income and lower/ higher frequency. 
+
+```{r}
+cannabis_data <- cannabis_data %>%
+  # Transform numerical back to categorical representation
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", 
+                                 "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) %>%
+  # Collapse into binary variables  
+  mutate(cannabis_use_binary = case_when(
+    use_freq_rec %in% 1:3 ~ "Infrequent Usage", 
+    use_freq_rec %in% 4:7 ~ "Frequent Usage",    
+    TRUE ~ NA_character_
+  )) %>%
+
+  mutate(income_binary = case_when(
+    income_recode %in% 1:2 ~ "Lower Income", 
+    income_recode %in% 3:4 ~ "Higher Income",  
+    TRUE ~ NA_character_
+  ))
+
+```
+
+```{r exercise31setup, echo = FALSE}
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>%
+  # Transform numerical back to categorical representation
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", 
+                                 "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) %>%
+  # Collapse into binary variables  
+  mutate(cannabis_use_binary = case_when(
+    use_freq_rec %in% 1:3 ~ "Infrequent Usage", 
+    use_freq_rec %in% 4:7 ~ "Frequent Usage",    
+    TRUE ~ NA_character_
+  )) %>%
+
+  mutate(income_binary = case_when(
+    income_recode %in% 1:2 ~ "Lower Income", 
+    income_recode %in% 3:4 ~ "Higher Income",  
+    TRUE ~ NA_character_
+  ))
+
+```
+
+Now we can perform our RR and OR calculations using the package function `epitab()`: 
+
+```{r exercise31, exercise= TRUE, exercise.lines = 8, exercise.setup="exercise31setup"}
+# RR
+epitab(table(cannabis_data$income_binary, cannabis_data$cannabis_use_binary), 
+       method = "riskratio")$tab
+
+# OR
+epitab(table(cannabis_data$income_binary, cannabis_data$cannabis_use_binary), 
+       method = "oddsratio")$tab
+```
+
+
+The fifth column is labeled either *riskratio* or *oddsratio*, depending on which method you specify in the function. `$tab` at the end of the code is used to display the results in a table format. You will learn what the columns to the right of it later in the course. 
+
+Based on this output and these data, the odds of high frequency cannabis usage for those classified as being lower income is 1.56 times the odds those classified as being high income. And, the risk of high frequency cannabis usage for those classified as being higher income is roughly 17% lower than those in the low income group. In conclusion, lower income is associated with more frequent cannabis usage for recreational purposes.
+
+
+**CODING EXERCISE**
+
+You give it a try! Create appropriate summaries to explore the association between high cannabis usage frequency and education level. For simplicity, the `cannabis_data` has been cleaned for you with additional binary variables `cannabis_use_binary` (corresponding to `recreational_use_frequency`) and `education_binary` (corresponding to `education`).
+
+```{r exercise32setup, echo = FALSE}
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>% 
+  select(prov, education3, income_recode, community_size, use_freq_rec) %>%
+  filter(if_all(everything(), ~ . != -7)) %>%
+  filter(if_all(everything(), ~ . != -8))
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", 
+                                 "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) %>%
+    mutate(cannabis_use_binary = case_when(
+    use_freq_rec %in% 1:3 ~ "Infrequent Usage", 
+    use_freq_rec %in% 4:7 ~ "Frequent Usage",    
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(income_binary = case_when(
+    income_recode %in% 1:2 ~ "Lower Income", 
+    income_recode %in% 3:4 ~ "Higher Income",  
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(education = factor(education3, 
+                         levels = 1:3,
+                         labels = c("High School or Less", "Trades or non-university diploma", "Bachelor's Degree or Higher"))) %>%
+  mutate(education_binary = case_when(
+    education3 %in% 1:2 ~ "High School/Trades", 
+    education3 == 3 ~ "Bachelors or Higher",  
+    TRUE ~ NA_character_
+  ))
+```
+
+
+```{r exercise32, exercise= TRUE, exercise.lines = 10, exercise.setup="exercise32setup"}
+
+
+
+
+```
+
+
+
+```{r exercise32-hint-1}
+# What type of variables are they?
+```
+
+
+```{r exercise18-hint-2}
+# Review the code for cannabis use frequency and income.
+# Does any of those summaries that work in this situation?
+```
+
+
+```{r exercise32-solution}
+# Here are several options:
+
+# Stacked barplot
+barplot(table(cannabis_data$education, cannabis_data$recreational_use_frequency), 
+        legend.text = TRUE, 
+        xlab = "Highest Level of Education")
+
+# Mosaic plot
+mosaicplot(table(cannabis_data$education, cannabis_data$recreational_use_frequency), 
+        legend.text = TRUE, 
+        xlab = "Highest Level of Education", ylab="Recreational Cannabis Usage Frequency")
+
+# Frequency table
+table(cannabis_data$education, cannabis_data$recreational_use_frequency)
+
+# Proportional table
+prop.table(table(cannabis_data$education, cannabis_data$recreational_use_frequency),margin=2)
+
+# RR
+epitab(table(cannabis_data$education_binary, cannabis_data$cannabis_use_binary), method="riskratio")$tab
+
+# OR
+epitab(table(cannabis_data$education_binary, cannabis_data$cannabis_use_binary), method="oddsratio")$tab
+
+```
+
+
+
+## Spatial Data
+
+This section contains more advanced data visualization techniques, and is entirely optional. Many students have indicated an interested in visualizing spatial data. Feel free to skip this section if this does not apply to your interests.
+
+Spatial data is often used in epidemiology and public health research. Some key applications include identifying clusters and disease hotspots, looking at environmental or geographical relationships with health outcomes, and in investigating geographic inequities in health outcomes or services. 
+
+**Chloropleth maps** use colors and shading to show a hierarchical relationship across geographic boundaries (ie. income, population density, mortality rate, etc.) and help to visualize spatial patterns. 
+
+To work with spatial data in R, first there are some necessary packages to install. In general, the **maps** package is sufficient in visualizing a basic chloropleth map, which will be used for demonstration in this section. Other packages list below are also commonly used to map spatial data, such as the **sf** package, which allows for more complex spatial data manipulation and analysis.
+
+```{r}
+#install.packages("maps")
+#install.packages("sf")
+#install.packages("sf", type = "source")
+#install.packages("canadianmaps")
+library(maps)
+library(sf)
+library(canadianmaps)
+```
+
+An Introduction to GIS using R is also avaliable from the Univeristy of Toronto Map and Data Library here: https://mdl.library.utoronto.ca/technology/tutorials/introduction-gis-using-r. 
+
+
+Suppose we want to look at the PFAS exposures across the United States. First, let's load the map of the United States using the `map_data()` function in the *maps* R package. 
+
+```{r}
+states_map <- map_data("state")
+states_map 
+```
+
+Then, we need to join our PFAS data to the spatial data. Recall that a shared column between the datasets is required to perform the join, and both datasets must be aggregated at the same geographical unit. 
+
+```{r}
+states_map <- states_map %>%
+  
+  # Rename the spatial data column 
+  mutate(State = state.abb[match(str_to_title(region), state.name)]) %>% 
+  
+  # Perform join based on shared column "State"
+  left_join(pfas_births, by = "State") 
+```
+
+To use **ggplot2** to create maps, we usually set up the geographical location (longitude and latitude) using `x` and `y`, insert the numerical values using the `fill` parameter and use the `geom_polygon()` option. Gradient color schemes are controlled by `scale_fill_gradient()`, they are great for displaying chloropleth maps, as the darker and lighter shades visually communicate the data in an intuitive way.
+
+```{r}
+# Visualize the map using ggplot()
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "black") + 
+  scale_fill_gradient(low = "yellow2", high = "red3", name = "Average PFAS Exposure by State") +
+  theme_map()
+```
+
+This section does not provide an exhaustive tutorial on spatial data anaylsis, but rather an introduction. If you are interested in learning in more depth about spatial data visualizations, the University of Toronto Map & Data Library has detailed applications of the *sf* package here: https://mdl.library.utoronto.ca/technology/tutorials/introduction-gis-using-r 
+
+
+
+## Design Elements and Tidying Your Visualizations 
+
+In this section, we focus on some tips to make your visualizations look polished and purposeful. 
+
+### *Color and Visual Elements*
+
+When choosing colors for your visualizations these are some things to keep in mind: 
+
+- Choose colors that are colorblind-friendly (avoid relying solely on red-green distinctions)
+- Use a consistent color palette throughout your analysis
+- Limit your color palette to 3-5 colors maximum to avoid visual clutter
+- Use color strategically to highlight key findings, not just for decoration
+- Ensure sufficient contrast between elements for readability
+
+Let's look at an example for how to use color. First, let's explore all the color options available in R: 
+
+```{r colexercise, exercise= TRUE}
+# These are the names of all the colours available in R.
+colours()
+```
+
+
+Consider this map:
+
+```{r, echo=FALSE}
+# PFAS Exposure US states map
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "black") + 
+  scale_fill_gradient(low = "lightblue", high = "royalblue4", name = "Average PFAS Exposure by State (ppt)") +
+  theme_map()
+```
+
+Compare the above version of the map with this one: 
+```{r, echo=FALSE}
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "white") + 
+  scale_fill_gradient(low = "lightgreen", high = "magenta", name = "Average PFAS Exposure by State (ppt)") +
+  theme_map()
+```
+
+Referring to the beginning of this section, which map displays the data more meaningfully and is more visually appealing? Why? 
+
+### *Labeling Your Data and Text* 
+
+Having clear, concise labeling for your data components is crucial in making your visualization accessible. 
+
+
+1. *Legends*
+
+- Place legends where they don't obstruct data points (usually top-right or bottom-right)
+- Use clear, descriptive legend titles and labels
+- Remove legends when they're redundant (it. only one data series)
+- Make legend text large enough to read easily
+
+2. *Axes and Scales* 
+
+- Start y-axes at zero for bar charts to avoid misleading comparisons
+- Use appropriate scale breaks and intervals that make sense for your data
+- Label axes clearly with units of measurement included
+- Rotate x-axis labels if they're too long or crowded
+- Consider log scales for data spanning several orders of magnitude
+
+3. *Titles and Fonts* 
+
+- Use readable font sizes 
+- Keep titles concise but informative
+- Use consistent font throughout your visualization
+
+Overall, and building on everything previously discussed, we want our data visualizations to convey meaningful information with as much organization and as little clutter as possible. Some final pointers: 
+
+- Maintain adequate white space around your plot
+- Order categorical data logically (alphabetically, by frequency, or by meaningful hierarchy)
+- Remove unnecessary elements that don't add to understanding
+
+### *Example 1*
+
+If you saw this visualization given no context, you would not be able to make any sense of it for a variety of reasons. 
+
+```{r, echo=FALSE}
+total_pfas_data <-pfas_data %>%
+  filter(Analyte == "Total PFAS") 
+
+
+total_pfas_data %>% 
+  ggplot(aes(x = Value..PPT.)) +
+  geom_histogram() 
+```
+
+Let's transform it step by step: 
+
+```{r}
+total_pfas_data %>% 
+  ggplot(aes(x = Value..PPT.)) + 
+  
+  # binwidth` or `bins`: size of the intervals the values fall under
+  # fill: bar filled color
+  # color: bar border color
+  # alpha: color transparency
+  geom_histogram(binwidth = 5, fill = "steelblue", color = "white", alpha = 0.8) + 
+  
+  # Creating appropriate axis units
+  scale_x_continuous(
+    limits = c(0, 100),
+    breaks = seq(0, 100, by = 10), 
+    labels = seq(0, 100, by = 10)
+  ) +
+  
+  # Include informative and desrciptive titles and axes labels
+  labs(
+    title = "Distribution of Total PFAS Measurements in Water Samples", #clear and descriptive title
+    x = "Total PFAS Concentration (ppt)", 
+    y = "Number of Samples" # Change 'count' to a more meaningful variable name 
+  ) +
+  
+  # Minimalistic theme with no background annotations
+  theme_minimal() +
+  
+  # Resize the text fonts
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    
+    # Remove unnecessary clutter and minimize gridlines 
+    panel.grid.minor = element_blank()
+  ) 
+  
+```
+
+### *Example 2*
+
+Similarly, this visualization given no context would be hard to interpretate. 
+
+```{r}
+barplot(prop.table(table(cannabis_data$annual_income,cannabis_data$recreational_use_frequency),margin=2),legend.text=TRUE)
+```
+
+Let's transform it step by step: 
+
+```{r}
+# Clean the data
+cannabis_plot_data <- cannabis_data %>%
+  filter(!is.na(annual_income) & !is.na(recreational_use_frequency)) %>%
+  count(annual_income, recreational_use_frequency) %>%
+  group_by(recreational_use_frequency) %>%
+  mutate(proportion = n / sum(n)) %>%
+  ungroup()
+
+ggplot(cannabis_plot_data, aes(x = recreational_use_frequency, y = proportion, fill = annual_income)) +
+  
+  # Bars with heights according to y, white borders, and 0.8 width
+  geom_col(color = "white", width = 0.8) +
+  
+  # Choose a good colour palette
+  scale_fill_manual(
+    values = c("#2c7bb6", "#abd9e9", "#fdae61", "#d7191c"),
+    name = "Annual Income"
+  ) +
+  
+  # Display proportion (y-axis) in % form
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = seq(0, 1, by = 0.2),
+    expand = c(0, 0)
+  ) +
+  
+  # Include informative and desrciptive titles, axes labels, and caption
+  labs(
+    title = "Income Distribution by Cannabis Use Frequency",
+    subtitle = "Stacked proportions showing income composition within each usage category",
+    x = "Cannabis Use Frequency",
+    y = "Proportion of Users (%)",
+    caption = "Each bar represents 100% of users in that frequency category"
+  ) +
+  
+  # Minimal theme feature
+  theme_minimal() +
+  theme(
+    
+    # Resize text font
+    plot.title = element_text(size = 14, face = "bold", margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray60", margin = margin(b = 15)),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    
+    # Adjust legend position, text font
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 10),
+    
+    # Remove unnecessary clutter and minimize gridlines 
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+```
+
+## Conclusions 
+
+Congratulations! Through completion of learnR module 2, you have familiarized yourself with some R code that will be useful for lab assignments, and modified and ran R code to wrangle and summarize data.

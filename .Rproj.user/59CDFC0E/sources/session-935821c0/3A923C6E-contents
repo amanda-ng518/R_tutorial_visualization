@@ -1,0 +1,273 @@
+---
+title: "Design Elements and Tidying Your Visualizations"
+author: "Amanda Ng"
+
+format:
+  live-html:
+    toc: true
+    number-sections: false
+  
+engine: knitr
+
+resources:
+  - data
+
+webr:
+  packages:
+    - tidyverse
+    - maps
+    - sf
+    - canadianmaps
+    - ggplot2
+
+live:
+  show-hints: true
+  show-solutions: true
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+In this section, we focus on some tips to make your visualizations look polished and purposeful.
+
+```{webr}
+#| include: false
+pfas_data <- read.csv("data/pfas_data.csv")
+birth_data <- read.csv("data/birth_data.csv")
+birth_data <- birth_data %>% rename(State = State.Abbreviation)
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+pfas_births <- left_join(pfas_data_mean, birth_data, by = "State")
+# Remove NA observations
+pfas_births <- na.omit(pfas_births) 
+
+total_pfas_data <- pfas_data %>%
+  filter(Analyte == "Total PFAS") 
+
+cannabis_data <- read.csv("data/cannabis_data.csv")
+cannabis_data <- cannabis_data %>% 
+  select(prov, education3, income_recode, community_size, use_freq_rec) %>%
+  filter(if_all(everything(), ~ . != -7)) %>%
+  filter(if_all(everything(), ~ . != -8))
+cannabis_data <- cannabis_data %>%
+  # Transform numerical back to categorical representation
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", 
+                                 "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) %>%
+  # Collapse into binary variables  
+  mutate(cannabis_use_binary = case_when(
+    use_freq_rec %in% 1:3 ~ "Infrequent Usage", 
+    use_freq_rec %in% 4:7 ~ "Frequent Usage",    
+    TRUE ~ NA_character_
+  )) %>%
+
+  mutate(income_binary = case_when(
+    income_recode %in% 1:2 ~ "Lower Income", 
+    income_recode %in% 3:4 ~ "Higher Income",  
+    TRUE ~ NA_character_
+  ))
+
+states_map <- map_data("state")
+states_map <- states_map %>%
+  # Rename the spatial data column 
+  mutate(State = state.abb[match(str_to_title(region), state.name)]) %>% 
+  # Perform join based on shared column "State"
+  left_join(pfas_births, by = "State") 
+```
+
+## *Color and Visual Elements*
+
+When choosing colors for your visualizations these are some things to keep in mind:
+
+-   Choose colors that are colorblind-friendly (avoid relying solely on red-green distinctions)
+-   Use a consistent color palette throughout your analysis
+-   Limit your color palette to 3-5 colors maximum to avoid visual clutter
+-   Use color strategically to highlight key findings, not just for decoration
+-   Ensure sufficient contrast between elements for readability
+
+Let's look at an example for how to use color. First, let's explore all the color options available in R:
+
+```{webr}
+# These are the names of all the colours available in R.
+colours()
+```
+
+Consider this map:
+
+```{webr}
+# PFAS Exposure US states map
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "black") + 
+  scale_fill_gradient(low = "lightblue", high = "royalblue4", name = "Average PFAS Exposure by State (ppt)") +
+  theme_map()
+```
+
+Compare the above version of the map with this one:
+
+```{webr}
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "white") + 
+  scale_fill_gradient(low = "lightgreen", high = "magenta", name = "Average PFAS Exposure by State (ppt)") +
+  theme_map()
+```
+
+Referring to the beginning of this section, which map displays the data more meaningfully and is more visually appealing? Why?
+
+## *Labeling Your Data and Text*
+
+Having clear, concise labeling for your data components is crucial in making your visualization accessible.
+
+1.  *Legends*
+
+-   Place legends where they don't obstruct data points (usually top-right or bottom-right)
+-   Use clear, descriptive legend titles and labels
+-   Remove legends when they're redundant (it. only one data series)
+-   Make legend text large enough to read easily
+
+2.  *Axes and Scales*
+
+-   Start y-axes at zero for bar charts to avoid misleading comparisons
+-   Use appropriate scale breaks and intervals that make sense for your data
+-   Label axes clearly with units of measurement included
+-   Rotate x-axis labels if they're too long or crowded
+-   Consider log scales for data spanning several orders of magnitude
+
+3.  *Titles and Fonts*
+
+-   Use readable font sizes
+-   Keep titles concise but informative
+-   Use consistent font throughout your visualization
+
+Overall, and building on everything previously discussed, we want our data visualizations to convey meaningful information with as much organization and as little clutter as possible. Some final pointers:
+
+-   Maintain adequate white space around your plot
+-   Order categorical data logically (alphabetically, by frequency, or by meaningful hierarchy)
+-   Remove unnecessary elements that don't add to understanding
+
+## *Example 1*
+
+If you saw this visualization given no context, you would not be able to make any sense of it for a variety of reasons.
+
+Let's transform it step by step:
+
+```{webr}
+#| warning: false
+total_pfas_data %>% 
+  ggplot(aes(x = Value..PPT.)) + 
+  
+  # binwidth` or `bins`: size of the intervals the values fall under
+  # fill: bar filled color
+  # color: bar border color
+  # alpha: color transparency
+  geom_histogram(binwidth = 5, fill = "steelblue", color = "white", alpha = 0.8) + 
+  
+  # Creating appropriate axis units
+  scale_x_continuous(
+    limits = c(0, 100),
+    breaks = seq(0, 100, by = 10), 
+    labels = seq(0, 100, by = 10)
+  ) +
+  
+  # Include informative and desrciptive titles and axes labels
+  labs(
+    title = "Distribution of Total PFAS Measurements in Water Samples", #clear and descriptive title
+    x = "Total PFAS Concentration (ppt)", 
+    y = "Number of Samples" # Change 'count' to a more meaningful variable name 
+  ) +
+  
+  # Minimalistic theme with no background annotations
+  theme_minimal() +
+  
+  # Resize the text fonts
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    
+    # Remove unnecessary clutter and minimize gridlines 
+    panel.grid.minor = element_blank()
+  ) 
+  
+```
+
+## *Example 2*
+
+Similarly, this visualization given no context would be hard to interpretate.
+
+```{webr}
+barplot(prop.table(table(cannabis_data$annual_income,
+                         cannabis_data$recreational_use_frequency),
+                   margin=2),
+        legend.text=TRUE)
+```
+
+Let's transform it step by step:
+
+```{webr}
+# Clean the data
+cannabis_plot_data <- cannabis_data %>%
+  filter(!is.na(annual_income) & !is.na(recreational_use_frequency)) %>%
+  count(annual_income, recreational_use_frequency) %>%
+  group_by(recreational_use_frequency) %>%
+  mutate(proportion = n / sum(n)) %>%
+  ungroup()
+
+ggplot(cannabis_plot_data, aes(x = recreational_use_frequency, y = proportion, fill = annual_income)) +
+  
+  # Bars with heights according to y, white borders, and 0.8 width
+  geom_col(color = "white", width = 0.8) +
+  
+  # Choose a good colour palette
+  scale_fill_manual(
+    values = c("#2c7bb6", "#abd9e9", "#fdae61", "#d7191c"),
+    name = "Annual Income"
+  ) +
+  
+  # Display proportion (y-axis) in % form
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = seq(0, 1, by = 0.2),
+    expand = c(0, 0)
+  ) +
+  
+  # Include informative and desrciptive titles, axes labels, and caption
+  labs(
+    title = "Income Distribution by Cannabis Use Frequency",
+    subtitle = "Stacked proportions showing income composition within each usage category",
+    x = "Cannabis Use Frequency",
+    y = "Proportion of Users (%)",
+    caption = "Each bar represents 100% of users in that frequency category"
+  ) +
+  
+  # Minimal theme feature
+  theme_minimal() +
+  theme(
+    
+    # Resize text font
+    plot.title = element_text(size = 14, face = "bold", margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray60", margin = margin(b = 15)),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    
+    # Adjust legend position, text font
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 10),
+    
+    # Remove unnecessary clutter and minimize gridlines 
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+```
+
+# Conclusions
+
+Congratulations! Through completion of learnR module 2, you have familiarized yourself with some R code that will be useful for lab assignments, and modified and ran R code to wrangle and summarize data.

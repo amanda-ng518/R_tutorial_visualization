@@ -1,0 +1,40 @@
+---
+title: "ggplot2"
+format: html
+---
+
+# 
+
+In the following sections, we will produce plots using the **`ggplot2`** package, a *grammar of graphics* package which is also part of the **`tidyverse`** package. 
+
+The basic syntax of `ggplot2 in R` involves building plots step by step by adding layers with +. The general syntax is 
+
+```{r, eval=FALSE, echo =TRUE}
+
+ggplot(data , mapping = aes(...)) +
+  <GEOM_FUNCTION>(aes(...), ...) +
+  <OTHER_LAYERS> 
+
+```
+
+Any plot produced using `ggplot()` requires the following main components:
+
+1. `ggplot(data, aes(...))` 
+  - `data` is *data frame* that contains the data (in tidy data format) to plot,
+  - `aes():` *aesthetics* mappings (which variables are mapped to the x-axis, y-axis, color, size, shape, etc.).
+2. `+ geom_*()` sepcifies the *geometry* that defines how the plot will be drawn (e.g., histogram, scatterplot, etc.).
+3. Optional layer: `scale_x_continuous`, `scale_y_continuous` to customize axes (ticks, names, scale)
+4. Optional layer: `labs(x = ..., y = ..., subtitle = ..., title = ...)` to customize the labels for the axes and plot titles
+5. Optional layer: `ggplot` themes: e.g., `theme_classic()`, `theme_bw()`, `theme_minimal()`, `theme_dark()`, `theme_light()`. Complete list [here](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+
+Examples of geom layers are:
+
+`geom_histogram()`: represents numeric (continuous) data as a histogram
+
+`geom_line()`:  represents data as lines joining data points (e.g., line graphs)
+
+`geom_bar()` : represents discrete data as a bar chart
+
+`geom_point()`: represents data as points (e.g., scatter plots)
+
+There are many ways to customize your plots by building on the basic code. As you gain more experience with R, you will discover that there are multiple ways to do things in R, including data visualizations. But, we are focussing on **`ggplot2`** here since it is a powerful package you can use to produce impressive (and effective!) visualizations. 

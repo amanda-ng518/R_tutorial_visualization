@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: docs
+  
+website:
+  title: "Visualizations in R"
+  navbar:
+    left:
+      - href: ggplot2.qmd
+        text: ggplot2
+      - href: BaseR.qmd
+        text: Base R plots 
+      - href: epitools.qmd
+        text: Epitools        
+      - href: Spatial.qmd
+        text: Spatial Data   
+      - href: Design_elements.qmd
+        text: Design elements
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+    css: styles.css
+    toc: true
+
+editor: visual
+

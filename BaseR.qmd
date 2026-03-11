@@ -1,0 +1,281 @@
+---
+title: "Base R plots"
+author: "Amanda Ng"
+
+format:
+  live-html:
+    toc: true
+    number-sections: false
+  
+engine: knitr
+
+resources:
+  - data
+
+webr:
+  packages:
+    - tidyverse
+    - grid
+
+live:
+  show-hints: true
+  show-solutions: true
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+# Numerical Variable
+
+```{webr}
+#| include: false
+pfas_data <- read.csv("data/pfas_data.csv")
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+birth_data <- read.csv("data/birth_data.csv")
+birth_data <- birth_data %>% rename(State = State.Abbreviation)
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+pfas_births <- left_join(pfas_data_mean, birth_data, by = "State")
+
+cannabis_data <- read.csv("data/cannabis_data.csv")
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) 
+```
+
+In the previous sections, we focused on using `tidyverse` and `ggplot` functions to wrangle, summarize and visualize data. There are also some non-tidyverse functions that may come in handy. R comes built in with functions for plotting. Although they are not as popular as `ggplot`, they are still extremely useful, and in many cases, more customizeable. 
+
+When we were using `tidyverse` syntax, we took a logical, step-by-step approach to our coding through piping (`%>%`). In base R functions, we do not use piping. Instead, we specify the data frame to which the variables we are referring to. We do so by using the syntax `df$var` where `df` is the data frame name, and `var` is the variable name. If you do not include the data frame name first, your code won't run. Let's use base R functions to compute some summary statistics for `pfas_data`:
+
+```{webr}
+# summary() gives 5-number summary + mean
+summary(pfas_data$Value..PPT.) 
+
+# Minimum
+min(pfas_data$Value..PPT.)
+
+# First quartile (25th percentile)
+quantile(pfas_data$Value..PPT.,0.25) 
+
+# Median
+median(pfas_data$Value..PPT.)
+
+# Mean
+mean(pfas_data$Value..PPT.) 
+
+# Third Quartile (75th percentile)
+quantile(pfas_data$Value..PPT.,0.75) 
+
+# Maximum
+max(pfas_data$Value..PPT.) 
+
+# Standard Deviation
+sd(pfas_data$Value..PPT.) 
+
+```
+
+We can also create a stem plot for quantative variables using base R code. 
+
+```{webr}
+# Stem Plot
+stem(pfas_data$Value..PPT.)
+```
+
+We can also calculate the correlation with `cor()` between two numerical variables as follows:
+
+```{webr}
+# Remove NA observations
+pfas_births <- na.omit(pfas_births) 
+
+# Correlation between PFAS exposure and fertility rate
+cor(pfas_births$mean_ppt, pfas_births$Fertility.Rate)
+
+# Alternative way to remove NAs within cor() calculation
+cor(pfas_births$mean_ppt, pfas_births$Fertility.Rate, use="complete.obs")
+
+```
+
+# Categorical Variable I
+
+Recall the recreational use frequency classifications we added to the data frame `cannabis_data` in the previous section. We create an additional frequency classification on annual income as follow  
+
+```r
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) 
+```
+
+```{webr}
+head(cannabis_data)
+```
+
+Let's create some summaries of the distribution of frequency classifications for these individuals!
+
+## *Frequency table*
+
+A frequency table lists a set of values and how often each set of values appears. We use `table()` function to create such table. This frequency table looks at how many observations there are for each classification of recreational cannabis use frequency: 
+
+```{webr}
+# Frequency table
+table(cannabis_data$recreational_use_frequency)
+```
+
+
+## *Proportion table*
+
+A proportion table, also known as a relative frequency table, is essentially a frequency table that shows the proportion of a categories frequency relative to the total number of observations. We wrap the frequency table with `prop.table()` to create a proportion table. For example: 
+
+```{webr}
+# Proportion table
+prop.table(table(cannabis_data$recreational_use_frequency))
+```
+
+## *Bar plots* (using base R)
+
+We can also create bar plots with base R function `barplot()` wrapping the frequency or proportion table.
+
+```{webr}
+# Barplot of frequency (count) in each category
+barplot(table(cannabis_data$recreational_use_frequency)) 
+
+# Barplot of proportion in each category
+barplot(prop.table(table(cannabis_data$recreational_use_frequency))) 
+```
+
+## *Pie chart* 
+
+Pie charts are categorical data visualizations where each "slice" represents a proportion of the whole. Note that ggplot has no pie chart option, so this is where base R comes into handy! They are created using the `pie()` function wrapping the frequency table.
+
+```{webr}
+# Pie chart
+pie(table(cannabis_data$recreational_use_frequency))
+```
+
+However, pie charts have a lot of shortcomings and are often not the most effective visualizations, such as:
+
+- too many categories/"slices";
+- multiple similar values between categories;
+- ineffective visual display of exact proportions.
+
+In general, it is simply more effective to use bar charts given their versatility and increased informational capacity. Pie charts are only really an effective display when a part-to-whole comparison is meaningful, there are few categories, and the slices carve out identifiable proportions in the chart (such as multiples of 1/4, or 1/3).
+
+## How to customize base R plots
+
+To customize these plots, use the `help()` function to obtain the R help documentation for the function you are using. An internet search for code which you can adapt to suit your needs and preferences is a good place to start too (just make sure you understand what the code is doing!)
+
+# Categorical Variable II
+
+While we can create a two-way table using `dplyr` code, base R code is simply shorter. Consider the variables `annual_income` and `recreational_use_frequency` in `cannabis_data` dataset. We can produce two-way tables of counts and proportions and obtain joint distributions and conditional distributions.
+
+## *Two-way table of counts*
+
+When we insert two variables into `table()`, the first variable will be displayed in rows and the second variable will be displayed in columns.
+
+```{webr}
+table(cannabis_data$annual_income,
+      cannabis_data$recreational_use_frequency)
+```
+
+
+## *Two-way table of proportions* or *Joint Distribution*
+
+Similarly with `prop.table()`, the first variable will be displayed in rows and the second variable will be displayed in columns.
+
+```{webr}
+prop.table(table(cannabis_data$annual_income,
+                 cannabis_data$recreational_use_frequency))
+
+```
+
+
+## *Two-way table of proportions* or *Conditional distribution given row variable*
+
+To obtain conditional distribution given the row variable, simply set `margin = 1`.
+
+```{webr}
+prop.table(table(cannabis_data$annual_income,
+                 cannabis_data$recreational_use_frequency),
+           margin=1)
+```
+
+## *Two-way table of proportions* or *Conditional distribution given column variable*
+
+To obtain conditional distribution given the column variable, simply set `margin = 2`. Try coding it out yourself!
+
+```{webr}
+#| setup: true
+#| exercise: ex_1
+setwd(here())
+cannabis_data <- read.csv("cannabis_data.csv")
+cannabis_data <- cannabis_data %>%
+  mutate(recreational_use_frequency = factor(use_freq_rec, 
+                       levels = 1:7,
+                       labels = c("< 1 day per month", "1 day per month", "2-3 days a month", "1-2 days a week", "3-4 days a week", "5-6 days a week", "Daily"))) %>% 
+  mutate(annual_income = factor(income_recode, 
+                         levels = 1:4,
+                         labels = c("<$50k", "$50K to <$100K", 
+                                    "$100K to <$150K", ">150K "))) 
+```
+
+
+:::: {.panel-tabset}
+
+## Exercise
+```{webr}
+#| exercise: ex_1
+#| min-lines: 2
+
+```
+
+
+## Solution
+::: { .solution exercise="ex_1"}
+```r
+prop.table(table(cannabis_data$annual_income,
+                 cannabis_data$recreational_use_frequency),
+           margin=2)
+```
+:::
+::::
+
+## *Barplots* and *Mosaic plots*
+
+If we are interested in comparing annual income classifications versus cannabis usage frequency, we can use the second conditional distribution table above. Alternatively, we can also visualize this in a stacked barplot by wrapping the proportion table with `barplot()`. In this case, each bar corresponds to a category in the marginalized variable (shown on the x-axis), and the bars are further categorized by the other variable.
+
+```{webr}
+# Bar plot 
+barplot(prop.table(table(cannabis_data$annual_income,
+                         cannabis_data$recreational_use_frequency),
+                   margin=2),
+        legend.text=TRUE)
+
+```
+
+We can also create a mosaic plot for these variables using base R functions. Note that this function expects tables entered in the **opposite order** to the tables and bar plots above. The variable you would like the columns to represent in the mosaic plot should be entered as the rows (i.e., first variable in the table), and the variable you would like the rows to represent entered as the column (i.e., second variable in the table).
+
+```{webr}
+# Mosaic plot
+mosaicplot(table(cannabis_data$annual_income,
+                 cannabis_data$recreational_use_frequency))
+
+# Add a title using 'main' argument
+mosaicplot(
+  table(cannabis_data$annual_income,
+        cannabis_data$recreational_use_frequency),
+  main="Income Level Versus Recreational Cannabis Usage Frequency")
+
+```

@@ -1,0 +1,93 @@
+---
+title: "Spatial Data"
+author: "Amanda Ng"
+
+format:
+  live-html:
+    toc: true
+    number-sections: false
+  
+engine: knitr
+
+resources:
+  - data
+
+webr:
+  packages:
+    - tidyverse
+    - maps
+    - sf
+    - canadianmaps
+    - ggplot2
+
+live:
+  show-hints: true
+  show-solutions: true
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+```{webr}
+#| include: false
+pfas_data <- read.csv("data/pfas_data.csv")
+birth_data <- read.csv("data/birth_data.csv")
+birth_data <- birth_data %>% rename(State = State.Abbreviation)
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>%
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.))
+pfas_births <- left_join(pfas_data_mean, birth_data, by = "State")
+# Remove NA observations
+pfas_births <- na.omit(pfas_births) 
+```
+
+This section contains more advanced data visualization techniques, and is entirely optional. Many students have indicated an interested in visualizing spatial data. Feel free to skip this section if this does not apply to your interests.
+
+Spatial data is often used in epidemiology and public health research. Some key applications include identifying clusters and disease hotspots, looking at environmental or geographical relationships with health outcomes, and in investigating geographic inequities in health outcomes or services. 
+
+**Chloropleth maps** use colors and shading to show a hierarchical relationship across geographic boundaries (ie. income, population density, mortality rate, etc.) and help to visualize spatial patterns. 
+
+To work with spatial data in R, first there are some necessary packages to install. In general, the **maps** package is sufficient in visualizing a basic chloropleth map, which will be used for demonstration in this section. Other packages list below are also commonly used to map spatial data, such as the **sf** package, which allows for more complex spatial data manipulation and analysis.
+
+```{webr}
+#| edit: false
+library(maps)
+library(sf)
+library(canadianmaps)
+```
+
+An Introduction to GIS using R is also avaliable from the Univeristy of Toronto Map and Data Library [here](https://mdl.library.utoronto.ca/technology/tutorials/introduction-gis-using-r)
+
+
+Suppose we want to look at the PFAS exposures across the United States. First, let's load the map of the United States using the `map_data()` function in the *maps* R package. 
+
+```{webr}
+states_map <- map_data("state")
+states_map 
+```
+
+Then, we need to join our PFAS data to the spatial data. Recall that a shared column between the datasets is required to perform the join, and both datasets must be aggregated at the same geographical unit. 
+
+```{webr}
+states_map <- states_map %>%
+  
+  # Rename the spatial data column 
+  mutate(State = state.abb[match(str_to_title(region), state.name)]) %>% 
+  
+  # Perform join based on shared column "State"
+  left_join(pfas_births, by = "State") 
+```
+
+To use **ggplot2** to create maps, we usually set up the geographical location (longitude and latitude) using `x` and `y`, insert the numerical values using the `fill` parameter and use the `geom_polygon()` option. Gradient color schemes are controlled by `scale_fill_gradient()`, they are great for displaying chloropleth maps, as the darker and lighter shades visually communicate the data in an intuitive way.
+
+```{webr}
+# Visualize the map using ggplot()
+ggplot(states_map, aes(x = long, y = lat, group = group, fill = mean_ppt)) + 
+  geom_polygon(color = "black") + 
+  scale_fill_gradient(low = "yellow2", high = "red3", name = "Average PFAS Exposure by State") +
+  theme_map()
+```
+
+This section does not provide an exhaustive tutorial on spatial data anaylsis, but rather an introduction. If you are interested in learning in more depth about spatial data visualizations, the University of Toronto Map & Data Library has detailed applications of the *sf* package [here](https://mdl.library.utoronto.ca/technology/tutorials/introduction-gis-using-r).
+
+

@@ -1,0 +1,18 @@
+---
+title: "Visualizations in R"
+author: "Amanda Ng"
+---
+
+R is an open-source statistical package that is widely used in academia, research and industry. R Studio provides a nice interface for R and provides some very useful functionality.
+
+**You will be coding in R/R Studio and interpreting R code and output in this course. So, the purpose of the learnR Modules you will be working with this term is to give you experience with R code that may come in handy as you are working with data.** We will be using the University of Toronto JupyterHub to access the R/R Studio environment. To access R Studio on JupyterHub, use your UTORid and password to login at [https://r.datatools.utoronto.ca/](https://r.datatools.utoronto.ca/). Alternatively, if you wish to install R (and RStudio) on your own machine, R is freely available for download at [http://cran.r-project.org/](http://cran.r-project.org) for Windows, MacOS, and Linux operating systems and RStudio is available at [https://posit.co/downloads/](https://posit.co/downloads/).
+
+This activity can be done in your browser, as you go through each of the chunks. You do not need to download R/R Studio or use JupyterHub for this activity.
+
+In this module we will be going over:
+
+- creating plots with ggplot2
+- creating plots in base R
+- some essential Epi tools
+- creating maps 
+- designing your plots aesthetics

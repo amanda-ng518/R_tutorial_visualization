@@ -1,0 +1,20 @@
+{
+  "ggplot2.qmd": {
+    "ggplot2.html": "3622c0de"
+  },
+  "index.qmd": {
+    "index.html": "665081d4"
+  },
+  "Design_elements.qmd": {
+    "Design_elements.html": "2aa42833"
+  },
+  "Spatial.qmd": {
+    "Spatial.html": "348dd49f"
+  },
+  "epitools.qmd": {
+    "epitools.html": "24e1683d"
+  },
+  "BaseR.qmd": {
+    "BaseR.html": "c38cb125"
+  }
+}

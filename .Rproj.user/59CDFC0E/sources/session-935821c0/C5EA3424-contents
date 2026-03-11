@@ -1,0 +1,279 @@
+---
+title: "Wrangling your data"
+author: "Amanda Ng"
+
+format:
+  live-html:
+    toc: true
+    number-sections: false
+  
+engine: knitr
+
+resources:
+  - data
+  - images
+
+webr:
+  packages:
+    - tidyverse
+    - grid
+    - png
+
+live:
+  show-hints: true
+  show-solutions: true
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+## When is a dataset considered tidy?
+
+**Tidy datasets** provide a standardized way to link the structure of a dataset (i.e., its layout) with its semantics (i.e., its meaning). Most R functions need tidy data as inputs, so it’s essential that the data be set up in tidy format.
+
+-   **Structure** is the form and shape of your data. Most datasets are rectangular data tables (or *data frames*) consisting of rows and columns.
+
+-   **Semantics** is the meaning for the dataset. Datasets are a collection of *quantitative* and/or *qualitative* values. These values are classified in two ways — **variable** & **observation**. An observation consists of all measurements for an observational unit under study (e.g., a person, animal, location, etc.), and a variable is an attribute of the observational units (e.g., height, weight, temperature, etc.).
+
+A dataset is tidy if:
+
+-   Each *variable* has its own *column*.
+
+-   Each *observation* has its own *row*.
+
+-   Each *value* has its own *cell*.
+
+## Wrangling & Summarizing Data Part 1 - Categorical Data
+
+**Data wrangling** refers to the process of getting your data into a form that facilitates data visualization and other summaries, as well as fitting statistical models.
+
+For the first part of the wrangling module, we are going to be working with categorical survey data. As a quick review, there are three types of categorical data:
+
+-   *nominal data* is categorical data that has no significant order or ranking. Using the cannabis dataset as an example, *province* would be an example of nominal data
+
+-   *ordinal data* is categorical data that has a meaningful order or ranking. Using the cannabis dataset as an example, *education* would be an example of ordinal data
+
+-   *binary data* is categorical data that only takes up 2 possible values. Using the cannabis dataset as an example, *sex* would be an example of binary data
+
+```{webr, out.width="80%"}
+#| echo: false
+cannabis_data <- read.csv("data/cannabis_data.csv") 
+img <- readPNG("images/Ordinal-nominal-and-binary-factor-categorical-variables-Binary-factor-variables.png")
+grid::grid.raster(img)
+```
+
+Whether categorical data is *ordinal* or *nominal* should be considered in which visualization type would be the most effective. Bar charts and pie charts would likely be more appropriate visualizations for nominal data, while visualizations that emphasize meaningful order or progression, such as ordered bar charts or line charts, would be more effective for displaying ordinal data. We will look deeper into data visualizations in a later section.
+
+Suppose we are interested in indicators associated with increased cannabis usage (e.g. income, education level, rural vs urban communities.) Using `cannabis_data.csv`, we will work with survey data of individual cannabis usage frequency.
+
+In this next portion, we will review some common dplyr functions and how to apply them to your data wrangling.
+
+### `select()`
+
+Let's say we only want to use certain columns of a data frame. We saw earlier when reading in the cannabis dataset, there were tons of columns (596!!). Not all of these are necessary for the types of analysis we want to perform, so the *select()* function allows us to choose which columns (i.e., variables) we want to include:
+
+```{webr}
+# Selecting province, education, income, community size, and usage frequency columns
+cannabis_data %>% 
+  select(prov, education3, income_recode, community_size, use_freq_rec) -> cannabis_data
+head(cannabis_data)
+```
+
+We now have made the dataframe to only include the columns we want to analyze!
+
+### `filter()`
+
+This function can be used to choose rows based on certain criteria. Going back to the cannabis data, if we look at our data dictionary we see that non responses aren't recorded as *NA* but rather as certain numbers. We can filter the dataset to only include rows with responses:
+
+```{webr}
+cannabis_data <- cannabis_data%>% 
+  filter(if_all(everything(), ~ . != -7)) %>%
+  filter(if_all(everything(), ~ . != -8))
+head(cannabis_data)
+```
+
+Filter can also be used if we only want to look at a certain subset! This is where the logical statements we learnt earlier becomes handy. For example, if we only wanted to look at the observations within the province of Ontario, we could filter for this criteria: 
+
+```{webr}
+cannabis_data %>%
+  filter(prov == 7) # now we only would see survey responses from Ontario!
+```
+
+### `group_by()`
+
+Often in analyzing epidemiological data, we are interested in differences between groups. For example, social differences between groups such as income or access to care, or biological differences such as sex, weight, or age (not an exhaustive list!) can all have implications for the health of individuals and populations. This is where using the *group_by()* function would be appropriate.
+
+Let's do an example. Say you wanted set up the cannabis dataset to where you could perform analysis on differences in cannabis usage frequency between income levels.
+
+```{webr}
+cannabis_data %>%
+  group_by(income_recode) -> cannabis_data
+```
+
+You can also group by multiple columns by adding commas in between:
+
+```{webr}
+cannabis_data %>%
+  group_by(income_recode, education3)
+```
+
+### `tally()`
+
+In working with data and with different groups, it is common to want to know the number of observations for each factor or a combination of factors. The *tally()* function can be used to find the number of observations for a given category after using the *group_by()* function. This function is particularly useful when working with *categorical* data.
+
+Let's say we want to know the number of individuals that belong to each province. But first, in a prior line of code, remember that we had grouped the cannabis data by income. So first let's use *ungroup()* to undo this so we can group by province instead:
+
+```{webr}
+cannabis_data %>% 
+  ungroup(income_recode) %>% 
+  group_by(prov) %>% 
+  tally()
+```
+
+The above line of code tells us how many survey responses come from each province!
+
+## Wrangling & Summarizing Data Part 2 - Numerical Data 
+
+For the next part of the module, we are going to be working with some numerical data. 
+
+As a quick review, there are two types of numerical data: 
+
+- *discrete data* encompasses countable values, typically whole numbers. Hypothetical examples could be number of physicians in hospitals or number of cases of a disease
+
+- *continuous data* can take on any value within a range, which includes decimal or fractional values. Some examples could be height, weight, or temperature. 
+
+```{webr, out.width="80%"}
+#| echo: false
+img2 <- readPNG("images/Continuous-and-discrete-variables.png")
+grid::grid.raster(img2)
+```
+
+Let's get into some different data! But first, a little background on the data: 
+
+PFAS, or per- and polyfluoroalkyl substances, are synthetic chemicals found in commonly used products such as non-stick cookware, cosmetics, medical devices, textiles, and cosmetics (https://www.canada.ca/en/health-canada/services/chemicals-product-safety/per-polyfluoroalkyl-substances.html). Due to the substances strong carbon-fluorine bonds, they are extremely difficult to break down, and tend to accumulate in the environment; their exposure has been associated with several adverse outcomes related to liver, kidney, thyroid, and reproductive function, among others. 
+
+Today, we will be wrangling some data from the Environmental Protection Agency (EPA) and Environmental Working Group (EWG) monitoring the PFAS concentration in PPT (parts per trillion) across several sites in the United States (more info at https://www.ewg.org/interactive-maps/pfas_contamination/). 
+
+
+```{webr}
+#| include: false
+pfas_data <- read.csv("data/pfas_data.csv") 
+```
+
+```{webr}
+glimpse(pfas_data)
+```
+
+
+For demonstrative purposes, we are only going to focus on the PFAS dataset for this section. Now that we've read in the data, let's look at some more built in functions used to wrangle data!
+
+### `summarise()`
+
+The summarise function is used to create a summary of a vector into a single value. One way it can be used is to summarize quantitative data within groups. 
+
+An example might be easier to understand. Looking back to our PFAS dataset, there are multiple observations/rows associated with each state (as there are multiple sample sites in each state). Let's say we are interested in finding the average PFAS (ppt) for each state; this would be one way to use the summarize function to create a new dataframe showing this: 
+
+```{webr}
+pfas_data_mean <- pfas_data %>%
+  filter(Analyte == "Total PFAS") %>% # Filter to only get total PFAS
+  group_by(State) %>% 
+  summarise(mean_ppt = mean(Value..PPT.)) # This creates a new variable showing the average PFAS for each state
+```
+
+In `summarise()`, aside from `mean()`, you can also calculate `median()`, `max()`, `min()`, `sd()`, `n()` and many  more!
+
+
+### `arrange()`
+
+High levels of PFAS are associated with increases of reproductive complications, such as decreased fertility. If we wished to sort the observations in the dataset by PFAS levels, we can use **`arrange`**. By default, this sorts in ascending order, but we can use **`desc`** to sort from high to low instead. 
+
+```{webr}
+# Ascending order
+pfas_data_mean %>% arrange(mean_ppt) 
+```
+
+```{webr}
+# Descending order
+pfas_data_mean %>% arrange(desc(mean_ppt))
+```
+
+### `mutate()`
+
+The U.S. Environmental Protection Agency has established standards for specific PFAS compounds, with enforcable and non-enforcable maximum contamination levels for six compounds: PFOA, PFOS, PFNA, PFHxS, GenX, and PFBS. (https://www.epa.gov/sdwa/and-polyfluoroalkyl-substances-pfas)
+
+Some of the MCL (maximum contaminant levels) outlined are: 
+
+- PFOA - 4.0ppt
+
+- PFOS - 10ppt
+
+- PFNA - 10ppt
+
+- PFHxS - 10ppt
+
+- GenX - 10ppt 
+
+Let's say we are interested in looking at PFHxA average values by state, and wish to add a new variable to indicate whether each state has PFHxA levels exceeding the MCL guidelines.
+
+We can use **`ifelse`** (a quicker way of doing an if and else statement) and **`mutate`** (adds a new column) to add a new variable in the dataset to indicate whether each state exceeds the MCL. The code below creates a new variable called `high_PFHxA` which takes the value "yes" if `mean_pfhxa_ppt >= 10.0` is satisfied, and "no" otherwise.
+
+```{webr}
+PFHxA_MCL <- pfas_data %>%
+  filter(Analyte == "PFHxA") %>% # Filter to only get PFHxA
+  group_by(State) %>% 
+  summarise(mean_pfhxa_ppt = mean(Value..PPT.)) %>%
+  mutate(high_PFHxA =ifelse(mean_pfhxa_ppt>=10.0,"yes","no")) 
+
+
+PFHxA_MCL %>%
+  arrange() %>%
+  print(n = 46)
+```
+
+Which states exceed the guidelines? 
+
+```{webr}
+PFHxA_MCL %>%
+  filter(high_PFHxA == 'yes')
+```
+
+8 states are above the MCL for PFHxA!
+
+**CODING EXERCISES**
+
+Now, it's time for you to try your hand at what we've learned about wrangling quantitative data! 
+
+Using `pfas_data`, let's say we want to look at average PFOS levels at individual sample sites (aka Utility) instead of by state (some sites have multiple samples). Create a new data frame that returns the average PFOS by sample site. 
+
+
+:::: {.panel-tabset}
+
+```{r}
+#| setup: true
+#| exercise: ex_1
+library(tidyverse)
+pfas_data <- read.csv("data/pfas_data.csv")
+```
+
+## Exercise
+```{webr}
+#| exercise: ex_1
+mean_pfos_by_sample <- 
+  
+  
+  
+  
+```
+
+## Hints
+
+Try the summarise function. 
+
+## Solution
+```{r}
+mean_pfoa_by_sample <- pfas_data %>%
+  filter(Analyte == "PFOA") %>% #filtering to only get PFOA
+  group_by(Utility) %>% 
+  summarise(mean_pfoa_ppt = mean(Value..PPT.)) 
+```
+:::: 
+

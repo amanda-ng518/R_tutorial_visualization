@@ -1,0 +1,226 @@
+[
+  {
+    "objectID": "ggplot2.html",
+    "href": "ggplot2.html",
+    "title": "ggplot2",
+    "section": "",
+    "text": "In the following sections, we will produce plots using the ggplot2 package, a grammar of graphics package which is also part of the tidyverse package.\nThe basic syntax of ggplot2 in R involves building plots step by step by adding layers with +. The general syntax is\n\nggplot(data , mapping = aes(...)) +\n  &lt;GEOM_FUNCTION&gt;(aes(...), ...) +\n  &lt;OTHER_LAYERS&gt; \n\nAny plot produced using ggplot() requires the following main components:\n\nggplot(data, aes(...))\n\n\ndata is data frame that contains the data (in tidy data format) to plot,\naes(): aesthetics mappings (which variables are mapped to the x-axis, y-axis, color, size, shape, etc.).\n\n\n+ geom_*() sepcifies the geometry that defines how the plot will be drawn (e.g., histogram, scatterplot, etc.).\nOptional layer: scale_x_continuous, scale_y_continuous to customize axes (ticks, names, scale)\nOptional layer: labs(x = ..., y = ..., subtitle = ..., title = ...) to customize the labels for the axes and plot titles\nOptional layer: ggplot themes: e.g., theme_classic(), theme_bw(), theme_minimal(), theme_dark(), theme_light(). Complete list here.\n\nExamples of geom layers are:\ngeom_histogram(): represents numeric (continuous) data as a histogram\ngeom_line(): represents data as lines joining data points (e.g., line graphs)\ngeom_bar() : represents discrete data as a bar chart\ngeom_point(): represents data as points (e.g., scatter plots)\nThere are many ways to customize your plots by building on the basic code. As you gain more experience with R, you will discover that there are multiple ways to do things in R, including data visualizations. But, we are focussing on ggplot2 here since it is a powerful package you can use to produce impressive (and effective!) visualizations."
+  },
+  {
+    "objectID": "ggplot2.html#histograms",
+    "href": "ggplot2.html#histograms",
+    "title": "ggplot2",
+    "section": "Histograms",
+    "text": "Histograms\nHistograms are used to show the frequency distribution of numerical data within a dataset. They are useful for understanding the spread, skewness, and the presence of any outliers in the data. We use geom_histogram to create histograms.\nTry running the following code to create a histogram of PFAS levels on the cleaned dataset total_pfas_data, in which PFAS levels are stored in Value..PPT. variable.\n\n\n\n\n\n\n\n\nYou can also change the features of the histogram within geom_histogram:\n\nbin width using the binwidth argument\nbar fill colours using the fill argument\noutline colour of the bars using the colour argument\n\nFor example:\n\n\n\n\n\n\n\n\nGive it a try!"
+  },
+  {
+    "objectID": "ggplot2.html#boxplots",
+    "href": "ggplot2.html#boxplots",
+    "title": "ggplot2",
+    "section": "Boxplots",
+    "text": "Boxplots\nBoxplots show the distribution of numerial data through statistical means rather than as frequency values. The box contains the middle 50% of the data, the line in the middle of the box represents the median, while the whiskers extend to the minimum and maximum values. We use geom_boxplot to create boxplots.\nTry running the following code to create a boxplot of mean PFAS levels across different states on the cleaned dataset pfas_data_mean, in which state-specific mean PFAS levels are stored in mean_ppt variable:\n\n\n\n\n\n\n\n\nNote that to create this boxplot, PFAS levels were specified as y rather than x in aes() to maintain consistency with the boxplot format in the course. Try changing y to x in aes() and rerunning the code above to see what happens. Sometimes you encounter boxplots that look like this as well."
+  },
+  {
+    "objectID": "ggplot2.html#dotplots",
+    "href": "ggplot2.html#dotplots",
+    "title": "ggplot2",
+    "section": "Dotplots",
+    "text": "Dotplots\nDotplots also show the distribution of the data, with each observation represented as a dot. Hence, dotplots are best used when the dataset is small. We use geom_dotplot to create boxplots and dotplots.\nTry running the following code to create a dotplot of mean PFAS levels across different states on the cleaned dataset pfas_data_mean, in which state-specific mean PFAS levels are stored in mean_ppt variable:"
+  },
+  {
+    "objectID": "ggplot2.html#exercise-1",
+    "href": "ggplot2.html#exercise-1",
+    "title": "ggplot2",
+    "section": "Exercise",
+    "text": "Exercise\n\n\n\n\n\n\n\n\nTo change the y axis to percent instead of the default of count, you can add the code + scale_y_continuous(name=\"Percent\",labels = scales::percent) after geom_bar(). Give it a try!"
+  },
+  {
+    "objectID": "ggplot2.html#exercise-2",
+    "href": "ggplot2.html#exercise-2",
+    "title": "ggplot2",
+    "section": "Exercise",
+    "text": "Exercise"
+  },
+  {
+    "objectID": "ggplot2.html#barplots",
+    "href": "ggplot2.html#barplots",
+    "title": "ggplot2",
+    "section": "Barplots",
+    "text": "Barplots\nBarplots are a type of data visualization useful for comparing between groups and showing the relationship between a numerical and a categorical variable. They are highly useful for visualizing survey data!\nNotice that the data type for the prov column is integer in the dataframe.\n\n\n\n\n\n\n\n\nHowever, they are the coded representation of each province, instead of meaningful numerical values. Thus, we can use a function we learned in module 1 (i.e.,mutate) to convert the survey responses back into categories to generate a bar plot.\nWe use geom_bar to create bar plots. Run the following code to create a bar plot of the distribution of the provinces individuals in this cannabis_data survey fall into. factor() is used to convert the survey integer responses into more meaningful descriptions:\n\n\n\n\nExerciseNote 1Note 2\n\n\n\n\n\n\n\n\n\n\n\n\nTo change the y axis to percent instead of the default of count, you can add the code + scale_y_continuous(name=\"Percent\",labels = scales::percent) after geom_bar(). Give it a try!\n\n\n\n\n\n\n\nNote\n\n\n\n\n\n# Barplot of Percentage of individuals in each province\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar() + \n  scale_y_continuous(name=\"Percent\",labels = scales::percent)\n\n\n\n\n\n\nYou can also change the features of the bar graph within geom_bar similarly as histogram. Give it a try!\n\n\n\n\n\n\n\nNote\n\n\n\n\n\n# Example of changing colours\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar(fill = \"#56C8FC\" , colour = 'blue')"
+  },
+  {
+    "objectID": "ggplot2.html#hints",
+    "href": "ggplot2.html#hints",
+    "title": "ggplot2",
+    "section": "Hints",
+    "text": "Hints\n\n# Barplot of Percentage of individuals in each province\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar() + \n  scale_y_continuous(name=\"Percent\",labels = scales::percent)\n\nYou can also change the features of the bar graph within geom_bar similarly as histogram. Give it a try!\n::: { .hint exercise=“ex_6”}\n# Example of changing colours\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar(fill = \"#56C8FC\" , colour = 'blue') \n:::\n::::"
+  },
+  {
+    "objectID": "ggplot2.html#hint-1",
+    "href": "ggplot2.html#hint-1",
+    "title": "ggplot2",
+    "section": "Hint 1",
+    "text": "Hint 1\n\n# Barplot of Percentage of individuals in each province\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar() + \n  scale_y_continuous(name=\"Percent\",labels = scales::percent)"
+  },
+  {
+    "objectID": "ggplot2.html#hint-2",
+    "href": "ggplot2.html#hint-2",
+    "title": "ggplot2",
+    "section": "Hint 2",
+    "text": "Hint 2\n\nYou can also change the features of the bar graph within geom_bar similarly as histogram. Give it a try!\n# Example of changing colours\ncannabis_data %&gt;% \n  mutate(province = factor(prov, # the variable we are trying to transform\n                       levels = 1:11,     # original representation \n                       labels = c(\"AB\", \"BC\", \"MB\",      # the corresponding transformation, e.g. 1 -&gt; AB\n                                 \"NB\", \"NL\", \"NS\", \"ON\", \n                                 \"PE\", \"QC\", \"SK\", \"Territories\"))) %&gt;% \n  ggplot(aes(x = province)) +\n  geom_bar(fill = \"#56C8FC\" , colour = 'blue') \n\n::::"
+  },
+  {
+    "objectID": "ggplot2.html#using-facet_wrap-to-show-visualizations-by-group",
+    "href": "ggplot2.html#using-facet_wrap-to-show-visualizations-by-group",
+    "title": "ggplot2",
+    "section": "Using facet_wrap to show visualizations by group",
+    "text": "Using facet_wrap to show visualizations by group\nSuppose we were interested in comparing cannabis usage frequency for those across different income levels. We can produce visualizions comparing the distributions of recreational cannabis usage frequencies for these groups using facet_wrap. Similar to the previous section, we first have to transform recreational_use_frequency and income_recode variables from numerical representation back to their corresponding string representation."
+  },
+  {
+    "objectID": "ggplot2.html#using-boxplots-to-represent-multivariable-data",
+    "href": "ggplot2.html#using-boxplots-to-represent-multivariable-data",
+    "title": "ggplot2",
+    "section": "Using boxplots to represent multivariable data",
+    "text": "Using boxplots to represent multivariable data\nBoxplots can also be used to represent comparisons among multiple groups. Let’s say we are interested in looking at the different concentrations of PFAS analytes vary in the state of New Jersey:"
+  },
+  {
+    "objectID": "ggplot2.html#scatterplots",
+    "href": "ggplot2.html#scatterplots",
+    "title": "ggplot2",
+    "section": "Scatterplots",
+    "text": "Scatterplots\nScatter plots are data visualizations used to look at the relationship between two quantitative variables. For example, we can use it to explore the association between environmental PFAS concentrations and birth weight. We use geom_point to create scatterplots. We will use the joined pfas_births dataset:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFrom this, we can see a moderate negative association in our data, suggesting that higher PFAS exposure may be associated with lower birth weights. Statistical tests can be used to determine whether the relationship between the variables of interest is greater than what we would expect to see by chance. However, performing statistical analysis is beyond the scope of this tutorial. If you would like to draw more attention to the association, you can create a line of best fit based on the data using geom_smooth(method = \"lm\"):"
+  },
+  {
+    "objectID": "Design_elements.html",
+    "href": "Design_elements.html",
+    "title": "Design Elements and Tidying Your Visualizations",
+    "section": "",
+    "text": "In this section, we focus on some tips to make your visualizations look polished and purposeful."
+  },
+  {
+    "objectID": "Design_elements.html#color-and-visual-elements",
+    "href": "Design_elements.html#color-and-visual-elements",
+    "title": "Design Elements and Tidying Your Visualizations",
+    "section": "Color and Visual Elements",
+    "text": "Color and Visual Elements\nWhen choosing colors for your visualizations these are some things to keep in mind:\n\nChoose colors that are colorblind-friendly (avoid relying solely on red-green distinctions)\nUse a consistent color palette throughout your analysis\nLimit your color palette to 3-5 colors maximum to avoid visual clutter\nUse color strategically to highlight key findings, not just for decoration\nEnsure sufficient contrast between elements for readability\n\nLet’s look at an example for how to use color. First, let’s explore all the color options available in R:\n\n\n\n\n\n\n\n\nConsider this map:\n\n\n\n\n\n\n\n\nCompare the above version of the map with this one:\n\n\n\n\n\n\n\n\nReferring to the beginning of this section, which map displays the data more meaningfully and is more visually appealing? Why?"
+  },
+  {
+    "objectID": "Design_elements.html#labeling-your-data-and-text",
+    "href": "Design_elements.html#labeling-your-data-and-text",
+    "title": "Design Elements and Tidying Your Visualizations",
+    "section": "Labeling Your Data and Text",
+    "text": "Labeling Your Data and Text\nHaving clear, concise labeling for your data components is crucial in making your visualization accessible.\n\nLegends\n\n\nPlace legends where they don’t obstruct data points (usually top-right or bottom-right)\nUse clear, descriptive legend titles and labels\nRemove legends when they’re redundant (it. only one data series)\nMake legend text large enough to read easily\n\n\nAxes and Scales\n\n\nStart y-axes at zero for bar charts to avoid misleading comparisons\nUse appropriate scale breaks and intervals that make sense for your data\nLabel axes clearly with units of measurement included\nRotate x-axis labels if they’re too long or crowded\nConsider log scales for data spanning several orders of magnitude\n\n\nTitles and Fonts\n\n\nUse readable font sizes\nKeep titles concise but informative\nUse consistent font throughout your visualization\n\nOverall, and building on everything previously discussed, we want our data visualizations to convey meaningful information with as much organization and as little clutter as possible. Some final pointers:\n\nMaintain adequate white space around your plot\nOrder categorical data logically (alphabetically, by frequency, or by meaningful hierarchy)\nRemove unnecessary elements that don’t add to understanding"
+  },
+  {
+    "objectID": "Design_elements.html#example-1",
+    "href": "Design_elements.html#example-1",
+    "title": "Design Elements and Tidying Your Visualizations",
+    "section": "Example 1",
+    "text": "Example 1\nIf you saw this visualization given no context, you would not be able to make any sense of it for a variety of reasons.\nLet’s transform it step by step:"
+  },
+  {
+    "objectID": "Design_elements.html#example-2",
+    "href": "Design_elements.html#example-2",
+    "title": "Design Elements and Tidying Your Visualizations",
+    "section": "Example 2",
+    "text": "Example 2\nSimilarly, this visualization given no context would be hard to interpretate.\n\n\n\n\n\n\n\n\nLet’s transform it step by step:"
+  },
+  {
+    "objectID": "Spatial.html",
+    "href": "Spatial.html",
+    "title": "Spatial Data",
+    "section": "",
+    "text": "This section contains more advanced data visualization techniques, and is entirely optional. Many students have indicated an interested in visualizing spatial data. Feel free to skip this section if this does not apply to your interests.\nSpatial data is often used in epidemiology and public health research. Some key applications include identifying clusters and disease hotspots, looking at environmental or geographical relationships with health outcomes, and in investigating geographic inequities in health outcomes or services.\nChloropleth maps use colors and shading to show a hierarchical relationship across geographic boundaries (ie. income, population density, mortality rate, etc.) and help to visualize spatial patterns.\nTo work with spatial data in R, first there are some necessary packages to install. In general, the maps package is sufficient in visualizing a basic chloropleth map, which will be used for demonstration in this section. Other packages list below are also commonly used to map spatial data, such as the sf package, which allows for more complex spatial data manipulation and analysis.\n\n\n\n\n\n\n\n\nAn Introduction to GIS using R is also avaliable from the Univeristy of Toronto Map and Data Library here\nSuppose we want to look at the PFAS exposures across the United States. First, let’s load the map of the United States using the map_data() function in the maps R package.\n\n\n\n\n\n\n\n\nThen, we need to join our PFAS data to the spatial data. Recall that a shared column between the datasets is required to perform the join, and both datasets must be aggregated at the same geographical unit.\n\n\n\n\n\n\n\n\nTo use ggplot2 to create maps, we usually set up the geographical location (longitude and latitude) using x and y, insert the numerical values using the fill parameter and use the geom_polygon() option. Gradient color schemes are controlled by scale_fill_gradient(), they are great for displaying chloropleth maps, as the darker and lighter shades visually communicate the data in an intuitive way.\n\n\n\n\n\n\n\n\nThis section does not provide an exhaustive tutorial on spatial data anaylsis, but rather an introduction. If you are interested in learning in more depth about spatial data visualizations, the University of Toronto Map & Data Library has detailed applications of the sf package here."
+  },
+  {
+    "objectID": "epitools.html",
+    "href": "epitools.html",
+    "title": "epitools: Relative Risks and Odds Ratios",
+    "section": "",
+    "text": "Relative Risks and Odds Ratios\nWe can also compute relative risks (RR) and odds ratios (OR) to compare risk and odds of individuals falling within certain groups (income, education, etc.) also using cannabis at certain frequencies. Unfortunately, there are no functions in base R (or tidyverse) to compute RR and OR. So, we need to install and load another R package: epitools.\n#install.packages(\"epitools\")\nlibrary(epitools)\n\n\n\n\n\n\n\n\nTo calculate the OR and RR, we first need to collapse our income and frequency groups into two binary outcomes respectively, and determine what constitutes to lower/ higher income and lower/ higher frequency.\n\n\n\n\n\n\n\n\nNow we can perform our RR and OR calculations using the package function epitab():\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe fifth column is labeled either riskratio or oddsratio, depending on which method you specify in the function. $tab at the end of the code is used to display the results in a table format. You will learn what the columns to the right of it later in the course.\nBased on this output and these data, the odds of high frequency cannabis usage for those classified as being lower income is 1.56 times the odds those classified as being high income. And, the risk of high frequency cannabis usage for those classified as being higher income is roughly 17% lower than those in the low income group. In conclusion, lower income is associated with more frequent cannabis usage for recreational purposes.\n\n\nCoding Exercise\nYou give it a try! Create appropriate summaries to explore the association between high cannabis usage frequency and education level. For simplicity, the cannabis_data has been cleaned for you with additional binary variables cannabis_use_binary (corresponding to recreational_use_frequency) and education_binary (corresponding to education).\n\n\n\n\nExerciseHintsSolution\n\n\n\n\n\n\n\n\n\n\n\n\n\nWhat type of variables are they?\n\n\nReview the code for cannabis use frequency and income.\nDoes any of those summaries that work in this situation?\n\n\n\n\nHere are several options:\n# Stacked barplot\nbarplot(table(cannabis_data$education, cannabis_data$recreational_use_frequency), \n        legend.text = TRUE, \n        xlab = \"Highest Level of Education\")\n\n# Mosaic plot\nmosaicplot(table(cannabis_data$education, cannabis_data$recreational_use_frequency), \n        legend.text = TRUE, \n        xlab = \"Highest Level of Education\", ylab=\"Recreational Cannabis Usage Frequency\")\n\n# Frequency table\ntable(cannabis_data$education, cannabis_data$recreational_use_frequency)\n\n# Proportional table\nprop.table(table(cannabis_data$education, cannabis_data$recreational_use_frequency),margin=2)\n\n# RR\nepitab(table(cannabis_data$education_binary, cannabis_data$cannabis_use_binary), method=\"riskratio\")$tab\n\n# OR\nepitab(table(cannabis_data$education_binary, cannabis_data$cannabis_use_binary), method=\"oddsratio\")$tab"
+  },
+  {
+    "objectID": "BaseR.html",
+    "href": "BaseR.html",
+    "title": "Base R plots",
+    "section": "",
+    "text": "In the previous sections, we focused on using tidyverse and ggplot functions to wrangle, summarize and visualize data. There are also some non-tidyverse functions that may come in handy. R comes built in with functions for plotting. Although they are not as popular as ggplot, they are still extremely useful, and in many cases, more customizeable.\nWhen we were using tidyverse syntax, we took a logical, step-by-step approach to our coding through piping (%&gt;%). In base R functions, we do not use piping. Instead, we specify the data frame to which the variables we are referring to. We do so by using the syntax df$var where df is the data frame name, and var is the variable name. If you do not include the data frame name first, your code won’t run. Let’s use base R functions to compute some summary statistics for pfas_data:\n\n\n\n\n\n\n\n\nWe can also create a stem plot for quantative variables using base R code.\n\n\n\n\n\n\n\n\nWe can also calculate the correlation with cor() between two numerical variables as follows:"
+  },
+  {
+    "objectID": "BaseR.html#frequency-table",
+    "href": "BaseR.html#frequency-table",
+    "title": "Base R plots",
+    "section": "Frequency table",
+    "text": "Frequency table\nA frequency table lists a set of values and how often each set of values appears. We use table() function to create such table. This frequency table looks at how many observations there are for each classification of recreational cannabis use frequency:"
+  },
+  {
+    "objectID": "BaseR.html#proportion-table",
+    "href": "BaseR.html#proportion-table",
+    "title": "Base R plots",
+    "section": "Proportion table",
+    "text": "Proportion table\nA proportion table, also known as a relative frequency table, is essentially a frequency table that shows the proportion of a categories frequency relative to the total number of observations. We wrap the frequency table with prop.table() to create a proportion table. For example:"
+  },
+  {
+    "objectID": "BaseR.html#bar-plots-using-base-r",
+    "href": "BaseR.html#bar-plots-using-base-r",
+    "title": "Base R plots",
+    "section": "Bar plots (using base R)",
+    "text": "Bar plots (using base R)\nWe can also create bar plots with base R function barplot() wrapping the frequency or proportion table."
+  },
+  {
+    "objectID": "BaseR.html#pie-chart",
+    "href": "BaseR.html#pie-chart",
+    "title": "Base R plots",
+    "section": "Pie chart",
+    "text": "Pie chart\nPie charts are categorical data visualizations where each “slice” represents a proportion of the whole. Note that ggplot has no pie chart option, so this is where base R comes into handy! They are created using the pie() function wrapping the frequency table.\n\n\n\n\n\n\n\n\nHowever, pie charts have a lot of shortcomings and are often not the most effective visualizations, such as:\n\ntoo many categories/“slices”;\nmultiple similar values between categories;\nineffective visual display of exact proportions.\n\nIn general, it is simply more effective to use bar charts given their versatility and increased informational capacity. Pie charts are only really an effective display when a part-to-whole comparison is meaningful, there are few categories, and the slices carve out identifiable proportions in the chart (such as multiples of 1/4, or 1/3)."
+  },
+  {
+    "objectID": "BaseR.html#how-to-customize-base-r-plots",
+    "href": "BaseR.html#how-to-customize-base-r-plots",
+    "title": "Base R plots",
+    "section": "How to customize base R plots",
+    "text": "How to customize base R plots\nTo customize these plots, use the help() function to obtain the R help documentation for the function you are using. An internet search for code which you can adapt to suit your needs and preferences is a good place to start too (just make sure you understand what the code is doing!)"
+  },
+  {
+    "objectID": "BaseR.html#two-way-table-of-counts",
+    "href": "BaseR.html#two-way-table-of-counts",
+    "title": "Base R plots",
+    "section": "Two-way table of counts",
+    "text": "Two-way table of counts\nWhen we insert two variables into table(), the first variable will be displayed in rows and the second variable will be displayed in columns."
+  },
+  {
+    "objectID": "BaseR.html#two-way-table-of-proportions-or-joint-distribution",
+    "href": "BaseR.html#two-way-table-of-proportions-or-joint-distribution",
+    "title": "Base R plots",
+    "section": "Two-way table of proportions or Joint Distribution",
+    "text": "Two-way table of proportions or Joint Distribution\nSimilarly with prop.table(), the first variable will be displayed in rows and the second variable will be displayed in columns."
+  },
+  {
+    "objectID": "BaseR.html#two-way-table-of-proportions-or-conditional-distribution-given-row-variable",
+    "href": "BaseR.html#two-way-table-of-proportions-or-conditional-distribution-given-row-variable",
+    "title": "Base R plots",
+    "section": "Two-way table of proportions or Conditional distribution given row variable",
+    "text": "Two-way table of proportions or Conditional distribution given row variable\nTo obtain conditional distribution given the row variable, simply set margin = 1."
+  },
+  {
+    "objectID": "BaseR.html#two-way-table-of-proportions-or-conditional-distribution-given-column-variable",
+    "href": "BaseR.html#two-way-table-of-proportions-or-conditional-distribution-given-column-variable",
+    "title": "Base R plots",
+    "section": "Two-way table of proportions or Conditional distribution given column variable",
+    "text": "Two-way table of proportions or Conditional distribution given column variable\nTo obtain conditional distribution given the column variable, simply set margin = 2. Try coding it out yourself!\n\n\n\n\nExerciseSolution\n\n\n\n\n\n\n\n\n\n\n\n\n\nprop.table(table(cannabis_data$annual_income,\n                 cannabis_data$recreational_use_frequency),\n           margin=2)"
+  },
+  {
+    "objectID": "BaseR.html#barplots-and-mosaic-plots",
+    "href": "BaseR.html#barplots-and-mosaic-plots",
+    "title": "Base R plots",
+    "section": "Barplots and Mosaic plots",
+    "text": "Barplots and Mosaic plots\nIf we are interested in comparing annual income classifications versus cannabis usage frequency, we can use the second conditional distribution table above. Alternatively, we can also visualize this in a stacked barplot by wrapping the proportion table with barplot(). In this case, each bar corresponds to a category in the marginalized variable (shown on the x-axis), and the bars are further categorized by the other variable.\n\n\n\n\n\n\n\n\nWe can also create a mosaic plot for these variables using base R functions. Note that this function expects tables entered in the opposite order to the tables and bar plots above. The variable you would like the columns to represent in the mosaic plot should be entered as the rows (i.e., first variable in the table), and the variable you would like the rows to represent entered as the column (i.e., second variable in the table)."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Visualizations in R",
+    "section": "",
+    "text": "R is an open-source statistical package that is widely used in academia, research and industry. R Studio provides a nice interface for R and provides some very useful functionality.\nYou will be coding in R/R Studio and interpreting R code and output in this course. So, the purpose of the learnR Modules you will be working with this term is to give you experience with R code that may come in handy as you are working with data. We will be using the University of Toronto JupyterHub to access the R/R Studio environment. To access R Studio on JupyterHub, use your UTORid and password to login at https://r.datatools.utoronto.ca/. Alternatively, if you wish to install R (and RStudio) on your own machine, R is freely available for download at http://cran.r-project.org/ for Windows, MacOS, and Linux operating systems and RStudio is available at https://posit.co/downloads/.\nThis activity can be done in your browser, as you go through each of the chunks. You do not need to download R/R Studio or use JupyterHub for this activity.\nIn this module we will be going over:\n\ncreating plots with ggplot2\ncreating plots in base R\nsome essential Epi tools\ncreating maps\ndesigning your plots aesthetics"
+  }
+]
